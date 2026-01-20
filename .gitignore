@@ -22,4 +22,5 @@ Thumbs.db
 *.log
 
 # Local config
+config.json
 tya_status.log

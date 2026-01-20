@@ -9,9 +9,10 @@ import sys
 import os
 import re
 import time
+import json
 import argparse
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
@@ -21,6 +22,51 @@ from PySide6.QtGui import QMovie, QMouseEvent, QAction, QKeyEvent
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
+
+
+# =============================================================================
+# Configuration Manager
+# =============================================================================
+
+class ConfigManager:
+    """Manages persistent configuration stored in a JSON file."""
+    
+    DEFAULT_CONFIG = {
+        "last_character": None,
+    }
+    
+    def __init__(self, config_path: Path):
+        self.config_path = config_path
+        self.config = self._load()
+    
+    def _load(self) -> dict:
+        """Load configuration from file."""
+        if self.config_path.exists():
+            try:
+                with open(self.config_path, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                    # Merge with defaults to handle missing keys
+                    return {**self.DEFAULT_CONFIG, **loaded}
+            except (json.JSONDecodeError, IOError):
+                pass
+        return self.DEFAULT_CONFIG.copy()
+    
+    def _save(self):
+        """Save configuration to file."""
+        try:
+            with open(self.config_path, "w", encoding="utf-8") as f:
+                json.dump(self.config, f, indent=2, ensure_ascii=False)
+        except IOError as e:
+            print(f"Warning: Could not save config: {e}")
+    
+    @property
+    def last_character(self) -> Optional[str]:
+        return self.config.get("last_character")
+    
+    @last_character.setter
+    def last_character(self, value: str):
+        self.config["last_character"] = value
+        self._save()
 
 
 # =============================================================================
@@ -220,7 +266,12 @@ class LogTailer:
 class AvatarOverlay(QWidget):
     """The main overlay window with animated avatar."""
     
-    def __init__(self, assets_dir: str, default_character: Optional[str] = None):
+    def __init__(
+        self, 
+        assets_dir: str, 
+        default_character: Optional[str] = None,
+        on_character_changed: Optional[Callable[[str], None]] = None,
+    ):
         super().__init__()
         self.assets_dir = Path(assets_dir)
         self.current_state: Optional[State] = None
@@ -229,6 +280,7 @@ class AvatarOverlay(QWidget):
         self.characters: list[str] = []
         self._drag_start_pos: Optional[QPoint] = None
         self._dragging: bool = False
+        self._on_character_changed = on_character_changed
         
         self._setup_window()
         self._discover_characters()
@@ -312,6 +364,10 @@ class AvatarOverlay(QWidget):
             return
         self._load_character(character_name)
         print(f"Switched to character: {character_name}")
+        
+        # Notify callback
+        if self._on_character_changed:
+            self._on_character_changed(character_name)
     
     def _setup_ui(self):
         """Set up the UI components."""
@@ -484,6 +540,8 @@ class AvatarOverlay(QWidget):
 class AvatarApp:
     """Main application controller."""
     
+    CONFIG_FILENAME = "config.json"
+    
     def __init__(
         self,
         project_dir: str,
@@ -495,6 +553,10 @@ class AvatarApp:
         self.assets_dir = Path(assets_dir)
         self.log_path = log_path
         self.excludes = excludes
+        
+        # Configuration
+        config_path = self.assets_dir.parent / self.CONFIG_FILENAME
+        self.config = ConfigManager(config_path)
         
         # Components
         self.state_resolver = StateResolver()
@@ -508,10 +570,18 @@ class AvatarApp:
         self.log_timer: Optional[QTimer] = None
         self.keep_on_top_timer: Optional[QTimer] = None
     
+    def _on_character_changed(self, character_name: str):
+        """Callback when character is changed - save to config."""
+        self.config.last_character = character_name
+    
     def start(self, app: QApplication):
         """Start all components."""
-        # Create overlay
-        self.overlay = AvatarOverlay(str(self.assets_dir))
+        # Create overlay with saved character preference
+        self.overlay = AvatarOverlay(
+            str(self.assets_dir),
+            default_character=self.config.last_character,
+            on_character_changed=self._on_character_changed,
+        )
         self.overlay.show()
         self.overlay.set_state(State.IDLE)
         

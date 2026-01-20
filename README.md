@@ -153,6 +153,13 @@ python create_character.py tya-san ./my_pngs/ --duration 400
 
 # 状態ごとに別の間隔を指定
 python create_character.py tya-san ./my_pngs/ --typing-duration 150
+
+
+例：
+# まず avatar_overlay ディレクトリに移動
+cd /home/ginnan/agent/avatar_overlay
+# そこから実行（素材フォルダと新キャラ名を指定）
+python3 create_character.py tuki ./assets/png/
 ```
 
 ### PNG素材の命名規則

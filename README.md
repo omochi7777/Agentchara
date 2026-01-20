@@ -135,31 +135,67 @@ assets/
 
 選択したキャラクターは `config.json` に自動保存され、次回起動時に復元されます。
 
-## 仮素材の生成
+## 新規キャラクターの作成
 
-テスト用の仮素材を生成するには：
+### PNG素材からキャラクターを作成
+
+`create_character.py` を使って、PNG素材から新しいキャラクターパックを生成できます：
+
+```bash
+# 基本的な使い方
+python create_character.py [キャラ名] [PNG素材フォルダ]
+
+# 例
+python create_character.py tya-san ./my_pngs/
+
+# フレーム間隔を調整
+python create_character.py tya-san ./my_pngs/ --duration 400
+
+# 状態ごとに別の間隔を指定
+python create_character.py tya-san ./my_pngs/ --typing-duration 150
+```
+
+### PNG素材の命名規則
+
+PNG素材は以下の命名規則で用意してください：
+
+| 状態 | PNGファイル名 | 代替名 |
+|------|--------------|--------|
+| idle | `idle01.png`, `idle02.png`, ... | - |
+| thinking | `thinking01.png`, `thinking02.png`, ... | - |
+| typing | `typing01.png`, ... | `type01.png`, ... |
+| running | `running01.png`, ... | `talking01.png`, ... |
+| success | `success01.png`, `success02.png`, ... | - |
+| error | `error01.png`, `error02.png`, ... | - |
+
+### テスト用の仮素材を生成
+
+プレースホルダー（仮素材）を生成するには：
 
 ```bash
 python generate_placeholders.py
 ```
 
+
 ## ファイル構成
 
 ```
 avatar_overlay/
-├── avatar_overlay.py       # メインアプリケーション
+├── avatar_overlay.py        # メインアプリケーション
+├── create_character.py      # キャラクター作成ツール
+├── create_gif.py            # GIF作成ユーティリティ
 ├── generate_placeholders.py # 仮素材生成スクリプト
-├── README.md               # このファイル
-├── assets/                 # アニメーション素材
-│   ├── default/            # デフォルトキャラクター
+├── README.md                # このファイル
+├── assets/                  # アニメーション素材
+│   ├── default/             # デフォルトキャラクター
 │   │   ├── idle.gif
 │   │   ├── thinking.gif
 │   │   ├── typing.gif
 │   │   ├── running.gif
 │   │   ├── success.gif
 │   │   └── error.gif
-│   └── (other_characters)/ # 追加キャラクター
-└── .venv/                  # Python仮想環境
+│   └── (other_characters)/  # 追加キャラクター
+└── .venv/                   # Python仮想環境
 ```
 
 ## トラブルシューティング

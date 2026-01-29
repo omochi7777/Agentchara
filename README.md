@@ -36,6 +36,8 @@ pip install PySide6 watchdog Pillow
 
 ### 基本的な使い方
 
+cd /home/ginnan/agent/avatar_overlay
+
 ```bash
 # 仮想環境を有効化
 source .venv/bin/activate

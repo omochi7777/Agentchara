@@ -38,15 +38,27 @@ def create_gif_from_pngs(png_folder, pattern, output_path, duration=500, loop=0)
             img = img.convert('RGBA')
         images.append(img)
     
-    # GIFとして保存
+    # 全フレームで統一パレットを作成（画質向上のため）
+    # まず全フレームを結合してパレットを生成
+    if images:
+        # P+A モード（パレット+アルファチャンネル）に変換してGIF最適化
+        optimized_images = []
+        for img in images:
+            # RGBAをPモードに変換（256色に最適化、ディザリング適用）
+            p_img = img.convert('P', palette=Image.ADAPTIVE, colors=256, dither=Image.FLOYDSTEINBERG)
+            optimized_images.append(p_img)
+        images = optimized_images
+    
+    # GIFとして保存（最適化ON！）
     images[0].save(
         output_path,
         save_all=True,
         append_images=images[1:],
         duration=duration,
         loop=loop,
-        optimize=False,
-        disposal=2  # 前のフレームをクリアしてから次のフレームを描画
+        optimize=True,  # 🎨 optimize=True で画質向上！
+        disposal=2,  # 前のフレームをクリアしてから次のフレームを描画
+        transparency=0  # 透過色のインデックスを指定
     )
     
     print(f"✓ GIFを作成しました: {output_path}")

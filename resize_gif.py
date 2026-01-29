@@ -49,7 +49,12 @@ def resize_gif(input_path, output_path, width=None, height=None, scale=None):
         while True:
             # フレームをリサイズ
             frame = gif.copy()
+            # RGBAモードに変換してからリサイズ（画質向上）
+            if frame.mode != 'RGBA':
+                frame = frame.convert('RGBA')
             frame = frame.resize(new_size, Image.Resampling.LANCZOS)
+            # Pモードに最適化変換（ディザリング適用）
+            frame = frame.convert('P', palette=Image.ADAPTIVE, colors=256, dither=Image.FLOYDSTEINBERG)
             frames.append(frame)
             
             # フレームの表示時間を取得
@@ -60,15 +65,16 @@ def resize_gif(input_path, output_path, width=None, height=None, scale=None):
     except EOFError:
         pass  # 全フレーム処理完了
     
-    # リサイズしたGIFを保存
+    # リサイズしたGIFを保存（最適化ON！）
     frames[0].save(
         output_path,
         save_all=True,
         append_images=frames[1:],
         duration=durations,
         loop=gif.info.get('loop', 0),
-        optimize=False,
-        disposal=2
+        optimize=True,  # 🎨 optimize=True で画質向上！
+        disposal=2,
+        transparency=0  # 透過色のインデックスを指定
     )
     
     print(f"✓ リサイズ完了: {output_path}")
